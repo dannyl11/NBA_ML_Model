@@ -4,7 +4,6 @@ from nba_api.stats.endpoints import leaguegamefinder
 from io import StringIO
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn import metrics
 import pandas as pd
 
 teamDict = {'GSW': 'Warriors', 'CHI': 'Bulls', 'CLE': 'Cavaliers', 
