@@ -60,8 +60,6 @@ def getTeamID(team): #helper for getGameLog
     teamID = teamX['id']
     return teamID
 
-# print(getTeamID('NYK'))
-
 def getOpponent(str): #helper for getGameLog
     if 'vs.' in str:
         oppIndex = str.find('.')
@@ -71,9 +69,7 @@ def getOpponent(str): #helper for getGameLog
         oppIndex = str.find('@')
         opponent = str[oppIndex+2:]
         return opponent, 0
-
-# print(getOpponent('MIL vs. CHA'))
-
+                
 def getGameLog(team): #last 200 games
     teamID = getTeamID(team)
     gamefinder = leaguegamefinder.LeagueGameFinder(team_id_nullable=str(teamID),
@@ -102,10 +98,7 @@ def getGameLog(team): #last 200 games
     gameLog['W/L'] = winLoss[::-1]
     return gameLog
 
-# print(getGameLog('MIL'))
-
-def addStats(): #add feauture variables to gameLog
-    #first add betting team last games to gameLog
+def addStats():
     team, opponent, venue = getTeam()
     opponent = teamDict[opponent.upper()]
     if venue.lower() == 'home':
@@ -115,7 +108,6 @@ def addStats(): #add feauture variables to gameLog
     gameLog = getGameLog(team)
     url = 'https://www.basketball-reference.com/leagues/NBA_2025.html'
     response = requests.get(url)
-    # html = response.text.replace('<--','').replace('-->','')
     teamStats = pd.read_html(StringIO(response.text), attrs={'id':'advanced-team'}, 
                          header=1)[0]
     teamStats = teamStats.drop(['Rk', 'Age', 'W', 'L', 'PW', 'PL', 'MOV', 'SOS',
@@ -168,19 +160,12 @@ def predictOutcome(data):
     featureCols = ['H1/A0', 'NetRtg', 'SRS', 'eFG%', 'OREB%', 'TOV%', 'DREB%']
     X = data[featureCols] #features
     y = data['W/L'] #target
-    # results = []
-    # for _ in range(10):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
                                                             shuffle=False)
     logReg = LogisticRegression(C=0.5, solver='saga', max_iter=10**5)
     logReg.fit(X_train, y_train)
-    yPred = logReg.predict(X_test)
-        # results.append(yPred[0])
-    wins = yPred.tolist().count(1)
-    winProb = round(wins/len(yPred), 3)
-    print(metrics.confusion_matrix(y_test, yPred))
-    accuracy = metrics.accuracy_score(y_test, yPred)
-    print(accuracy)
+    yPred = logReg.predict_proba(X_test)
+    winProb = yPred[-1, 1]    
     return winProb, probability
 
 def getProbability(odds):
@@ -194,6 +179,10 @@ def getProbability(odds):
 def main():
     data = addStats()
     pred, vegas = predictOutcome(data)
-    print(f'Calculated probability: {pred}\tBook probability: {vegas}')
-    print(f'Expected Value over book: {pred-vegas}')
+    print(f'Calculated win probability: {pred}\tBook probability: {vegas}')
+    print(f'Value over book: {pred-vegas}')
+    if (pred-vegas) >= 0.2:
+        print('Recommendation: Bet')
+    else:
+        print('Recommendation: No Bet')
 main()
