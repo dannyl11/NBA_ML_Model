@@ -4,7 +4,7 @@ from nba_api.stats.endpoints import leaguegamefinder
 from io import StringIO
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-import pandas as pd
+import pandas as pd 
 
 teamDict = {'GSW': 'Warriors', 'CHI': 'Bulls', 'CLE': 'Cavaliers', 
             'ATL': 'Hawks', 'BOS': 'Celtics', 'BKN': 'Nets', 'CHA': 'Hornets', 
@@ -59,6 +59,8 @@ def getTeamID(team): #helper for getGameLog
     teamID = teamX['id']
     return teamID
 
+# print(getTeamID('NYK'))
+
 def getOpponent(str): #helper for getGameLog
     if 'vs.' in str:
         oppIndex = str.find('.')
@@ -68,7 +70,9 @@ def getOpponent(str): #helper for getGameLog
         oppIndex = str.find('@')
         opponent = str[oppIndex+2:]
         return opponent, 0
-                
+
+# print(getOpponent('MIL vs. CHA'))
+
 def getGameLog(team): #last 200 games
     teamID = getTeamID(team)
     gamefinder = leaguegamefinder.LeagueGameFinder(team_id_nullable=str(teamID),
@@ -97,7 +101,10 @@ def getGameLog(team): #last 200 games
     gameLog['W/L'] = winLoss[::-1]
     return gameLog
 
-def addStats():
+# print(getGameLog('MIL'))
+
+def addStats(): #add feauture variables to gameLog
+    #first add betting team last games to gameLog
     team, opponent, venue = getTeam()
     opponent = teamDict[opponent.upper()]
     if venue.lower() == 'home':
@@ -107,6 +114,7 @@ def addStats():
     gameLog = getGameLog(team)
     url = 'https://www.basketball-reference.com/leagues/NBA_2025.html'
     response = requests.get(url)
+    # html = response.text.replace('<--','').replace('-->','')
     teamStats = pd.read_html(StringIO(response.text), attrs={'id':'advanced-team'}, 
                          header=1)[0]
     teamStats = teamStats.drop(['Rk', 'Age', 'W', 'L', 'PW', 'PL', 'MOV', 'SOS',
@@ -159,12 +167,14 @@ def predictOutcome(data):
     featureCols = ['H1/A0', 'NetRtg', 'SRS', 'eFG%', 'OREB%', 'TOV%', 'DREB%']
     X = data[featureCols] #features
     y = data['W/L'] #target
+    # results = []
+    # for _ in range(10):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
                                                             shuffle=False)
     logReg = LogisticRegression(C=0.5, solver='saga', max_iter=10**5)
     logReg.fit(X_train, y_train)
     yPred = logReg.predict_proba(X_test)
-    winProb = yPred[-1, 1]    
+    winProb = round(yPred[-1, 1], 3)
     return winProb, probability
 
 def getProbability(odds):
@@ -179,5 +189,5 @@ def main():
     data = addStats()
     pred, vegas = predictOutcome(data)
     print(f'Calculated win probability: {pred}\tBook probability: {vegas}')
-    print(f'Value over book: {pred-vegas}')
+    print(f'Value over book: {round(pred-vegas, 3)}')
 main()
