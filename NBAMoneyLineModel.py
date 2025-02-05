@@ -180,8 +180,4 @@ def main():
     pred, vegas = predictOutcome(data)
     print(f'Calculated win probability: {pred}\tBook probability: {vegas}')
     print(f'Value over book: {pred-vegas}')
-    if (pred-vegas) >= 0.2:
-        print('Recommendation: Bet')
-    else:
-        print('Recommendation: No Bet')
 main()
