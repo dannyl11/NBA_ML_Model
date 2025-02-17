@@ -4,7 +4,7 @@ from nba_api.stats.endpoints import leaguegamefinder
 from io import StringIO
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-import pandas as pd 
+import pandas as pd
 
 teamDict = {'GSW': 'Warriors', 'CHI': 'Bulls', 'CLE': 'Cavaliers', 
             'ATL': 'Hawks', 'BOS': 'Celtics', 'BKN': 'Nets', 'CHA': 'Hornets', 
@@ -141,12 +141,10 @@ def addStats(): #add feauture variables to gameLog
         offRebPct.append(row['ORB%'])
         turnoverPct.append(row['TOV%'])
         defRebPct.append(row['DRB%'])
-    gameLog['NetRtg'] = NRtg
-    gameLog['SRS'] = srs
-    gameLog['eFG%'] = eFG
-    gameLog['OREB%'] = offRebPct
-    gameLog['TOV%'] = turnoverPct
-    gameLog['DREB%'] = defRebPct
+    features = {'NetRtg': NRtg, 'SRS': srs, 'eFG%': eFG, 'OREB%': offRebPct,
+                'TOV%': turnoverPct, 'DREB%': defRebPct}
+    for key in features:
+        gameLog[key] = features[key]
     #now add upcoming game against opponent to gameLog df
     oppTemp = teamStats.loc[teamStats['Team'] == opponent]
     oppRow = oppTemp.iloc[0].to_dict()
@@ -159,6 +157,8 @@ def addStats(): #add feauture variables to gameLog
     lastRow = len(gameLog)
     gameLog.loc[lastRow] = [opponent, venue, 0, oppNRtg, oppSRS, oppEFG, oppORB,
                        oppTOV, oppDRB]
+    gameLog['H1/A0'] = gameLog['H1/A0']*0.5
+    #option to weight home/away differently
     return gameLog
 
 def predictOutcome(data):
@@ -167,8 +167,6 @@ def predictOutcome(data):
     featureCols = ['H1/A0', 'NetRtg', 'SRS', 'eFG%', 'OREB%', 'TOV%', 'DREB%']
     X = data[featureCols] #features
     y = data['W/L'] #target
-    # results = []
-    # for _ in range(10):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
                                                             shuffle=False)
     logReg = LogisticRegression(C=0.5, solver='saga', max_iter=10**5)
