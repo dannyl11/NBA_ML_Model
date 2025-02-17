@@ -157,8 +157,11 @@ def addStats(): #add feauture variables to gameLog
     lastRow = len(gameLog)
     gameLog.loc[lastRow] = [opponent, venue, 0, oppNRtg, oppSRS, oppEFG, oppORB,
                        oppTOV, oppDRB]
-    gameLog['H1/A0'] = gameLog['H1/A0']*0.5
-    #option to weight home/away differently
+    weights = {'H1/A0': 0.2, 'NRtg': 0.35, 'SRS': 0.35, 'eFG%': 1.2, 
+               'OREB%': 0.45, 'TOV%': -0.45, 'DREB%': 0.45}
+    for key in weights:
+        gameLog[key] = gameLog[key] * weights[key]
+    #option to weigh features differently
     return gameLog
 
 def predictOutcome(data):
